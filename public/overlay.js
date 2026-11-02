@@ -216,12 +216,13 @@ function playTTS() {
   if (m.url) {
     const el = new Audio(m.url); const src = AC.createMediaElementSource(el); const g = AC.createGain(); g.gain.value = 1.25; src.connect(g); g.connect(master);
     el.onplay = start; el.onended = el.onerror = done; el.play().catch(done);
-  } else if ('speechSynthesis' in window) {
+  } else if ('speechSynthesis' in window && speechSynthesis.getVoices().some(v => /^vi/i.test(v.lang))) {
+    // only with a real Vietnamese voice installed; an English voice reading Vietnamese sounds broken on stream
     const u = new SpeechSynthesisUtterance(m.text); u.lang = 'vi-VN'; u.rate = .95;
-    const vi = speechSynthesis.getVoices().find(v => /^vi/i.test(v.lang)); if (vi) u.voice = vi;
+    u.voice = speechSynthesis.getVoices().find(v => /^vi/i.test(v.lang));
     u.onstart = start; u.onend = u.onerror = done; speechSynthesis.speak(u);
     setTimeout(() => { if (ttsPlaying && !speechSynthesis.speaking) done(); }, 30_000);
-  } else { start(); setTimeout(done, 4000); }
+  } else { start(); setTimeout(done, 4000); }                       // no voice at all: keep the visuals in step, stay silent
 }
 
 /* ======================= effects ======================= */
