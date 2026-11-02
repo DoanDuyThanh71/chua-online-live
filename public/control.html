@@ -94,10 +94,10 @@ code{background:#0f0805;border:1px solid var(--line);border-radius:6px;padding:1
     <div class="grid" id="settings">
       <label>Tên chánh điện<input data-k="title"></label>
       <label>Dòng phụ<input data-k="subtitle"></label>
-      <label>Giọng đọc<select data-k="voice"><option value="vi-VN-NamMinhNeural">Nam Minh (nam)</option><option value="vi-VN-HoaiMyNeural">Hoài My (nữ)</option></select></label>
+      <label>Giọng đọc<select data-k="voice"><optgroup label="VieNeu (chạy trên máy, cần cài)"><option value="vieneu:Thiền Tâm Đức">Thiền Tâm Đức (nam, trầm)</option><option value="vieneu:Hải Đăng">Hải Đăng (nam)</option><option value="vieneu:Thiện Minh">Thiện Minh (nam)</option><option value="vieneu:Minh Đức">Minh Đức (nam, Bắc)</option><option value="vieneu:Quang Sơn">Quang Sơn (nam, Trung)</option><option value="vieneu:Ngọc Huyền">Ngọc Huyền (nữ)</option><option value="vieneu:Mai Anh">Mai Anh (nữ)</option><option value="vieneu:Thùy Dung">Thùy Dung (nữ, Nam)</option><option value="vieneu:Ngọc Trân">Ngọc Trân (nữ, Trung)</option><option value="vieneu:Trúc Ly">Trúc Ly (nữ)</option></optgroup><optgroup label="Edge (qua Internet)"><option value="vi-VN-NamMinhNeural">Nam Minh (nam)</option><option value="vi-VN-HoaiMyNeural">Hoài My (nữ)</option></optgroup></select></label>
       <label>Âm lượng tổng (%)<input data-k="volume" type="number" min="0" max="100"></label>
-      <label>Độ trầm giọng (Hz)<input data-k="pitch" type="number"></label>
-      <label>Tốc độ đọc (%)<input data-k="rate" type="number"></label>
+      <label>Độ trầm giọng (Hz, chỉ giọng Edge)<input data-k="pitch" type="number"></label>
+      <label>Tốc độ đọc (%, chỉ giọng Edge)<input data-k="rate" type="number"></label>
       <label class="check"><input type="checkbox" data-k="music"> Nhạc nền</label>
       <label class="check"><input type="checkbox" data-k="mo"> Mõ nền</label>
       <label>Nhịp mõ (BPM)<input data-k="moBpm" type="number" min="20" max="120"></label>

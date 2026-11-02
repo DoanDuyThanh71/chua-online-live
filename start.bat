@@ -20,6 +20,11 @@ if not exist "node_modules\" (
   )
 )
 
+if exist "tools\VieNeu-TTS\.venv\Scripts\python.exe" (
+  echo Bat giong doc VieNeu-TTS trong cua so rieng...
+  start "Giong doc VieNeu" /min cmd /c "%~dp0chay-giong-vieneu.bat"
+)
+
 echo.
 echo  Bang dieu khien : http://localhost:3000/control.html
 echo  Overlay 9:16    : http://localhost:3000/overlay.html

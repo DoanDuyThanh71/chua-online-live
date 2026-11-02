@@ -49,7 +49,7 @@ const store = new JsonStore(path.join(DATA, 'state.json'), { settings: {}, allTi
 if (store.error) console.error(store.error);
 const voice = new Voice({
   dir: TTS_DIR, urlPrefix: '/tts/', send: m => broadcast(m, 'overlay'), log,
-  settings: () => temple.settings, disabled: process.env.DISABLE_TTS === '1',
+  settings: () => temple.settings, disabled: process.env.DISABLE_TTS === '1', vieneuUrl: process.env.VIENEU_URL,
 });
 const temple = new Temple({
   send: (m, role) => broadcast(m, role || 'all'),
@@ -158,7 +158,7 @@ function onControl(m) {
 
 /* -------------------------------------------------------------- server */
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json',
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.mp3': 'audio/mpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
 const ALLOWED_HOSTS = new Set([`localhost:${PORT}`, `127.0.0.1:${PORT}`, `[::1]:${PORT}`]);
 const okHost = h => !LOOPBACK || ALLOWED_HOSTS.has(String(h || '').toLowerCase());
 const okToken = k => !TOKEN || (typeof k === 'string' && k.length === TOKEN.length && crypto.timingSafeEqual(Buffer.from(k), Buffer.from(TOKEN)));
@@ -167,7 +167,7 @@ function resolveStatic(p) {
   if (p === '/') p = '/control.html';
   if (p.split('/').some(seg => seg.startsWith('.') || seg === 'node_modules')) return null;
   let base = PUBLIC, rel = p;
-  if (p.startsWith('/tts/')) { base = TTS_DIR; rel = p.slice(4); if (!/^\/[a-f0-9]{20}\.mp3$/.test(rel)) return null; }
+  if (p.startsWith('/tts/')) { base = TTS_DIR; rel = p.slice(4); if (!/^\/[a-f0-9]{20}\.(mp3|wav)$/.test(rel)) return null; }
   const file = path.normalize(path.join(base, rel));
   if (!file.startsWith(base + path.sep)) return null;
   return file;

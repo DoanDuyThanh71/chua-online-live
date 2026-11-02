@@ -4,3 +4,5 @@ data/runtime/
 .env
 .DS_Store
 Thumbs.db
+
+tools/

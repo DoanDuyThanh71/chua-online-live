@@ -23,7 +23,9 @@ export const DEFAULT_SETTINGS = {
   allowMove: true, vipMinCoins: 10, altarOnGiftCoins: 10,
 };
 
-const VOICES = ['vi-VN-NamMinhNeural', 'vi-VN-HoaiMyNeural'];
+// Edge voices, plus VieNeu-TTS presets (local model, see server/tts.mjs)
+export const VIENEU_VOICES = ['Thiền Tâm Đức', 'Hải Đăng', 'Thiện Minh', 'Minh Đức', 'Quang Sơn', 'Ngọc Huyền', 'Mai Anh', 'Thùy Dung', 'Ngọc Trân', 'Trúc Ly'];
+const VOICES = ['vi-VN-NamMinhNeural', 'vi-VN-HoaiMyNeural', ...VIENEU_VOICES.map(v => 'vieneu:' + v)];
 const bool = v => v === true || v === 'true' || v === 1;
 // Only known keys, right types, sane ranges: the panel is local, but nothing from the socket is trusted blindly.
 const SETTING_RULES = {

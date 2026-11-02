@@ -16,6 +16,7 @@ Bản chánh điện là sản phẩm chính. Mọi tính năng mới phục v�
 - Người xem điều khiển nhân vật: `sang trái` / `sang phải` / `lên` / `xuống`, `kinh hành`, `lên lạy Phật`, bồ đoàn vàng cho top 3 người tặng
 - Bảo mật mặc định, 27 test tự động
 - **Kết nối TikTok thật đã thử (02/11/2026 tối)**: nối vào 3 phòng live đang phát của người khác, chỉ đọc. Nhận đủ bình luận, tim, quà (có combo), chia sẻ, người vào, số người xem; tên và avatar đúng; overlay xếp người thật vào bồ đoàn. Lần đầu thường báo "Failed to retrieve Room ID", lần thử lại thứ 2 thì vào được
+- Giọng VieNeu-TTS chạy trên máy (10 giọng), tự chuyển qua lại với Edge khi một bên lỗi. Script cài `cai-giong-vieneu.bat` ghim đúng bản VieNeu đã đọc mã. **Chưa chạy thử thật trên máy**: mới test bằng server VieNeu giả
 - Bot thử: tự tắt và dọn người thử khi kết nối live thật, khóa nút Bot / Đổ người, mọi người thử có nhãn "·thử"
 
 ### Việc tiếp theo, theo thứ tự

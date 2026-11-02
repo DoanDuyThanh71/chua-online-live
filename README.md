@@ -15,6 +15,8 @@ Cần **Node.js 20 trở lên**: tải bản LTS tại https://nodejs.org.
 2. Trong bảng điều khiển, bấm **Mở overlay (có âm thanh)**.
 3. Chưa live vẫn thử được: dùng mục **Thử tương tác** hoặc **Bật bot**.
 
+**Giọng đọc chạy trên máy (nên cài)**: nháy đúp `cai-giong-vieneu.bat` một lần. File này cài [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) (mô hình giọng Việt mã nguồn mở của Phạm Nguyễn Ngọc Bảo, Apache-2.0) vào `tools\VieNeu-TTS`. Cần **Git** và **Python 3.10–3.13**. Có card NVIDIA thì cài bản GPU (tải khoảng 3 GB). Sau đó `start.bat` tự bật giọng VieNeu trong một cửa sổ thu nhỏ, và bảng điều khiển có thêm 10 giọng VieNeu (mặc định nên chọn **Thiền Tâm Đức**).
+
 Hoặc chạy bằng dòng lệnh:
 
 ```bash
@@ -96,12 +98,14 @@ npm start
 | `TIKTOK_USER` | (trống) | Tự kết nối kênh này khi khởi động |
 | `SIGN_API_KEY` | (trống) | Khóa Euler Stream, nếu máy chủ ký miễn phí bị giới hạn lượt. Khóa chỉ nằm trên server |
 | `DATA_DIR` | `data/runtime` | Nơi lưu dữ liệu và bộ nhớ đệm giọng đọc |
-| `DISABLE_TTS` | (trống) | Đặt `1` để tắt Edge TTS và dùng giọng của trình duyệt |
+| `DISABLE_TTS` | (trống) | Đặt `1` để tắt cả VieNeu lẫn Edge TTS và dùng giọng của trình duyệt |
+| `VIENEU_URL` | `http://127.0.0.1:8000` | Địa chỉ server VieNeu-TTS |
 
 ## Giới hạn cần biết
 
 - `tiktok-live-connector` là **thư viện cộng đồng, không phải API chính thức của TikTok**. Nó có thể ngừng chạy khi TikTok đổi hệ thống. Kiểm tra điều khoản của TikTok trước khi dùng cho kênh của bạn.
-- Giọng đọc dùng dịch vụ Read Aloud của Microsoft Edge qua Internet. Dịch vụ này đôi khi chập chờn, nên server tự thử lại 3 lần. Nếu vẫn lỗi, overlay đọc bằng giọng tiếng Việt có sẵn trong trình duyệt.
+- Giọng đọc có hai nguồn: **VieNeu-TTS** chạy ngay trên máy, và **Read Aloud của Microsoft Edge** qua Internet. Edge hỏng khoảng 30–40% số lần (đo ngày 02/11/2026), nên server tự thử lại 3 lần. Giọng đang chọn lỗi thì server chuyển sang nguồn còn lại. Cả hai cùng lỗi thì overlay đọc bằng giọng tiếng Việt của trình duyệt.
+- VieNeu tự gắn watermark âm thanh không nghe được vào giọng đọc (tính năng của dự án gốc, để giữ nguyên).
 - Hình ảnh và nhạc do AI tạo, lấy từ dự án gốc (xem THIRD_PARTY.md). Kiểm tra điều khoản trước khi dùng thương mại, hoặc thay bằng tài nguyên của bạn.
 
 ## Lưu ý về nội dung
