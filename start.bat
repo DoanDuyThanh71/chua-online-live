@@ -1,0 +1,30 @@
+@echo off
+chcp 65001 >nul
+cd /d "%~dp0"
+title Chanh Dien An Lac - TikTok LIVE
+
+where node >nul 2>&1
+if %errorlevel% neq 0 (
+  echo [LOI] Chua cai Node.js. Tai ban LTS tai https://nodejs.org roi chay lai file nay.
+  pause
+  exit /b 1
+)
+
+if not exist "node_modules\" (
+  echo Dang cai thu vien lan dau...
+  call npm install --no-audit --no-fund
+  if %errorlevel% neq 0 (
+    echo [LOI] npm install that bai.
+    pause
+    exit /b 1
+  )
+)
+
+echo.
+echo  Bang dieu khien : http://localhost:3000/control.html
+echo  Overlay 9:16    : http://localhost:3000/overlay.html
+echo  Giu cua so nay mo trong suot buoi live. Ctrl+C de tat.
+echo.
+start "" cmd /c "timeout /t 2 >nul & start http://localhost:3000/control.html"
+node server\index.mjs
+pause
