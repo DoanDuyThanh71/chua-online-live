@@ -32,6 +32,8 @@ if %errorlevel%==0 (
   echo Khong thay card NVIDIA: cai ban CPU.
 )
 "%PY%" -m pip install -e "%DIR%" fastapi uvicorn || (echo [LOI] Cai VieNeu that bai & pause & exit /b 1)
+rem transformers 4.57 can huggingface_hub < 1.0, nhung pip install o tren co the nang len 1.x (chi gradio cua web UI can 1.x)
+"%PY%" -m pip install "huggingface_hub>=0.34.0,<1.0" || (echo [LOI] & pause & exit /b 1)
 
 echo.
 echo Cai xong. Lan dau chay se tai them model (vai tram MB).
