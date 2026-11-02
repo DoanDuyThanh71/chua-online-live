@@ -59,8 +59,16 @@ const temple = new Temple({
 });
 const tiktok = new TikTokLink({
   temple, log, signApiKey: process.env.SIGN_API_KEY || '',
-  onState: st => broadcast({ t: 'tiktok', ...st }, 'all'),
+  onState: st => {
+    // a real room is live: test characters must never sit among real viewers
+    if (st.status === 'connected' && (botTimer || [...temple.viewers.values()].some(v => v.demo))) {
+      if (botTimer) setBots(false); else temple.clearSeats(true);
+      log('Đã kết nối live thật: tắt bot và dọn người thử');
+    }
+    broadcast({ t: 'tiktok', ...st }, 'all');
+  },
 });
+const isLive = () => tiktok.state.status === 'connected';
 
 /* -------------------------------------------------------------- timers */
 const tick = setInterval(() => temple.tick(), 1000);
@@ -81,12 +89,16 @@ const BOT_LINES = ['Nam mô A Di Đà Phật', 'Nam mô Bổn Sư Thích Ca Mâu
   'sang trái', 'sang phải', 'lên', 'xuống', 'kinh hành', 'lên lạy Phật'];
 let botTimer = null;
 const pick = a => a[Math.floor(Math.random() * a.length)];
-const demoWho = (i, name) => ({ id: 'demo_' + i, name, demo: true });
+// every test character carries a visible tag, so nobody on stream mistakes it for a real viewer
+const demoName = s => clean(s, 18) + ' ·thử';
+const SKINS = ['man', 'woman', 'woman', 'man', 'granny', 'monk', 'nun', 'child'];
+const seatDemo = i => temple.seat('demo_' + i, demoName(DEMO_NAMES[i % DEMO_NAMES.length] + (i >= DEMO_NAMES.length ? ' ' + (1 + Math.floor(i / DEMO_NAMES.length)) : '')), { demo: true, skin: SKINS[i % 8] });
 function setBots(on, n, pace) {
   clearInterval(botTimer); botTimer = null;
   if (!on) { temple.clearSeats(true); log('🤖 Tắt bot'); broadcast({ t: 'bots', on: false }, 'control'); return; }
+  if (isLive()) { log('Đang kết nối live thật: không bật bot. Ngắt kết nối TikTok trước nếu muốn thử'); broadcast({ t: 'bots', on: false }, 'control'); return; }
   n = clamp(n, 1, 100);
-  for (let i = 0; i < n; i++) temple.seat('demo_' + i, DEMO_NAMES[i % DEMO_NAMES.length] + (i >= DEMO_NAMES.length ? ' ' + (1 + Math.floor(i / DEMO_NAMES.length)) : ''), { demo: true, skin: ['man', 'woman', 'woman', 'man', 'granny', 'monk', 'nun', 'child'][i % 8] });
+  for (let i = 0; i < n; i++) seatDemo(i);
   const every = { slow: 4000, mid: 1800, fast: 700 }[pace] || 1800;
   botTimer = setInterval(() => {
     const ids = [...temple.viewers.values()].filter(v => v.demo); if (!ids.length) return;
@@ -107,7 +119,7 @@ function onControl(m) {
     case 'connect': tiktok.connect(m.uniqueId); break;
     case 'disconnect': tiktok.disconnect(); log('Đã ngắt kết nối TikTok'); break;
     case 'sim': {
-      const name = S(m.name, 24, 'Khách thử'), who = { id: 'sim_' + name, name, demo: true };
+      const name = demoName(S(m.name, 24, 'Khách')), who = { id: 'sim_' + name, name, demo: true };
       switch (m.kind) {
         case 'chat': temple.onChat(who, S(m.text, 150, 'Nam mô A Di Đà Phật')); break;
         case 'like': temple.onLike(who, clamp(m.count, 1, 50)); break;
@@ -120,7 +132,10 @@ function onControl(m) {
       }
       break;
     }
-    case 'fill': for (let i = 0; i < clamp(m.n, 1, 100); i++) temple.seat('demo_' + i, DEMO_NAMES[i % DEMO_NAMES.length] + (i >= DEMO_NAMES.length ? ' ' + (1 + Math.floor(i / DEMO_NAMES.length)) : ''), { demo: true, skin: ['man', 'woman', 'woman', 'man', 'granny', 'monk', 'nun', 'child'][i % 8] }); log(`Đổ người mẫu: ${temple.viewers.size} người`); break;
+    case 'fill':
+      if (isLive()) { log('Đang kết nối live thật: không đổ người mẫu'); break; }
+      for (let i = 0; i < clamp(m.n, 1, 100); i++) seatDemo(i);
+      log(`Đổ người mẫu: ${temple.viewers.size} người`); break;
     case 'clear': temple.clearSeats(!!m.demoOnly); log('Đã làm trống bồ đoàn'); break;
     case 'bots': setBots(!!m.on, +m.n || 12, m.pace); break;
     case 'bell': broadcast({ t: 'bell', big: true }, 'overlay'); break;

@@ -31,7 +31,7 @@
 1. Bấm **Phát trực tiếp** trên TikTok trước.
 2. Trong bảng điều khiển, nhập `@tênkênh` và bấm **Kết nối**. Trạng thái ở góc trên phải phải chuyển sang **"đang nhận sự kiện"**.
 3. Nhờ một người bình luận thử "xin xăm" để kiểm tra.
-4. **Không bấm Bot hay Đổ người khi đang live thật.** Các nhân vật này mang tên giống người thật, người xem sẽ tưởng là người thật. Lỗi này chưa sửa.
+4. Khi đã kết nối, server **tự tắt bot và dọn người thử**, nút Bot và Đổ người bị khóa. Người tạo từ mục Thử tương tác luôn có nhãn **"·thử"** sau tên. Hạn chế bấm Thử tương tác khi đang live để màn hình chỉ có người xem thật.
 5. Thỉnh thoảng mở mục **Duyệt lời nguyện** để duyệt lời nguyện của người xem.
 
 ## Nếu có lỗi
@@ -40,6 +40,7 @@
 |---|---|
 | "chưa phát trực tiếp (offline)" | Bật LIVE trên TikTok trước, đợi khoảng 30 giây rồi bấm Kết nối lại |
 | "Máy chủ ký… giới hạn lượt" | Đợi vài phút. Nếu lặp lại nhiều lần thì cần khóa `SIGN_API_KEY` (Euler Stream) |
+| "Chưa lấy được mã phòng live" | Bình thường ở lần đầu, server tự thử lại sau vài giây. Lần thử ngày 02/11 đều vào được ở lần thứ 2 |
 | Mất kết nối giữa buổi | Server tự thử lại tối đa 8 lần. Nếu báo hết lượt thử thì bấm Kết nối lại |
 | Không có tiếng đọc | Nhật ký báo "Giọng Edge lỗi" thì overlay tự chuyển sang giọng của trình duyệt. Nếu vẫn im lặng, kiểm tra đã bấm **Bật âm thanh** trong cửa sổ overlay chưa |
 | Overlay đứng hình, hoạt cảnh chậm | Cửa sổ overlay đang bị thu nhỏ. Mở lại cửa sổ, hoặc chuyển sang Browser source |

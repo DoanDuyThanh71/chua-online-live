@@ -14,14 +14,16 @@ Bản chánh điện là sản phẩm chính. Mọi tính năng mới phục v�
 - Overlay 9:16 chánh điện: ngồi thiền, gõ mõ, thỉnh chuông, thắp hương, rút thẻ an lạc (30 thẻ), lời nguyện có duyệt, mốc cộng đồng, âm lịch
 - Quà: xướng tên hồi hướng, "lần thứ n", bảng công đức theo buổi và trọn đời, rút thẻ ưu tiên
 - Người xem điều khiển nhân vật: `sang trái` / `sang phải` / `lên` / `xuống`, `kinh hành`, `lên lạy Phật`, bồ đoàn vàng cho top 3 người tặng
-- Bảo mật mặc định, 26 test tự động
+- Bảo mật mặc định, 27 test tự động
+- **Kết nối TikTok thật đã thử (02/11/2026 tối)**: nối vào 3 phòng live đang phát của người khác, chỉ đọc. Nhận đủ bình luận, tim, quà (có combo), chia sẻ, người vào, số người xem; tên và avatar đúng; overlay xếp người thật vào bồ đoàn. Lần đầu thường báo "Failed to retrieve Room ID", lần thử lại thứ 2 thì vào được
+- Bot thử: tự tắt và dọn người thử khi kết nối live thật, khóa nút Bot / Đổ người, mọi người thử có nhãn "·thử"
 
 ### Việc tiếp theo, theo thứ tự
 
 | # | Việc | Độ khó | Nguồn lực | Ghi chú |
 |---|---|---|---|---|
-| 1 | **Thử một buổi live TikTok thật** | — | 1 buổi live khoảng 10–30 phút | Rủi ro lớn nhất: phần kết nối TikTok chưa từng chạy với live thật. Xem [CHECKLIST-LIVE.md](CHECKLIST-LIVE.md) |
-| 2 | **Sửa bot thử**: tự tắt khi đang kết nối TikTok thật, gắn nhãn "·thử" | Dễ | Không | Hiện bot và người mẫu mang tên giống người thật. **Không bấm Bot hay Đổ người khi đang live thật** |
+| 1 | **Thử một buổi live TikTok thật trên kênh của mình** | — | 1 buổi live khoảng 10–30 phút | Phần nhận sự kiện đã chạy được với live của người khác. Còn phải thử: âm thanh lên live qua Live Studio/OBS, quà thật đi đủ đường (xướng tên, bồ đoàn vàng). Xem [CHECKLIST-LIVE.md](CHECKLIST-LIVE.md) |
+| 2 | ~~Sửa bot thử~~ | — | — | Xong 02/11/2026 |
 | 3 | **Danh hiệu trọn đời** (Phật tử → Thiện hữu → Hộ pháp → Đại thí chủ) | Dễ | Không | Tổng xu đã được lưu sẵn. Nên định danh người xem bằng mã số tài khoản thay vì @username, vì người xem đổi @username sẽ mất danh hiệu |
 | 4 | **Bảng Lễ vật**: khung trên overlay ghi quà nào làm gì | Dễ (chia theo mức xu), trung bình (gán từng món quà) | Danh sách quà người xem hay tặng: tên và số xu | Danh sách quà TikTok thay đổi theo khu vực |
 | 5 | **Mục tiêu đạo tràng mỗi buổi**: đủ X xu thì mở hiệu ứng đặc biệt | Trung bình | Không, nếu dùng lại hình có sẵn | Không đặt mục tiêu quá cao |
@@ -84,6 +86,6 @@ Nếu muốn thử DJ: dùng TikFinity trên **một kênh phụ** trước, kh�
 ## Rủi ro đã biết
 
 - `tiktok-live-connector` là thư viện không chính thức. Kết nối qua máy chủ ký Euler Stream có thể bị giới hạn lượt; khi đó đặt `SIGN_API_KEY`.
-- Edge TTS chập chờn trên mạng của chủ dự án. Đã có cơ chế thử lại 3 lần và dự phòng bằng giọng trình duyệt.
+- Edge TTS chập chờn trên mạng của chủ dự án. Đo ngày 02/11/2026: khoảng 30–40% lần gọi hỏng sau ~2,4 giây ("no turn.end received"), kể cả khi mở kết nối mới, nên là do dịch vụ hoặc mạng chứ không phải code. Đã có cơ chế thử lại 3 lần và dự phòng bằng giọng trình duyệt, vì vậy **nên cài giọng tiếng Việt của Windows** (xem checklist).
 - Hình ảnh và nhạc do AI tạo, lấy từ kentjuno (MIT). Kiểm tra điều khoản trước khi dùng thương mại.
 - Các repo tham khảo nằm ở `D:\RepoGithub\_research_chua`. Chỉ kentjuno/chanh-dien-online và Miinh2k4 có giấy phép MIT. Repo khác chỉ lấy ý tưởng, **không chép code hay hình**.

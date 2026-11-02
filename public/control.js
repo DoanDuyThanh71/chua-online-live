@@ -37,6 +37,9 @@ const STATUS = { idle: 'chưa kết nối TikTok', connecting: 'đang kết nố
 function setStatus(st) {
   const el = $('status'); el.className = st.status || '';
   el.textContent = (st.uniqueId ? '@' + st.uniqueId + ' · ' : '') + (STATUS[st.status] || st.status) + (st.error ? ' — ' + st.error : '');
+  // no test characters while a real room is live (the server refuses them too)
+  const live = st.status === 'connected';
+  document.querySelectorAll('[data-fill], #btnBots').forEach(b => { b.disabled = live; b.title = live ? 'Đang live thật: ngắt kết nối TikTok trước khi thử' : ''; });
 }
 let lastStats = {};
 function showStats(s = lastStats, seated, cap) {

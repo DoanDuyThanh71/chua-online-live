@@ -64,7 +64,21 @@ test('overlay sockets cannot send commands; control sockets can', async () => {
   assert.ok(!ov.msgs.some(m => m.t === 'join' && m.v.name === 'Hacker'));
   ctl.s.send(JSON.stringify({ t: 'ctl', cmd: 'sim', kind: 'chat', name: 'Minh', text: 'xin chào' }));
   await wait(300);
-  assert.ok(ov.msgs.some(m => m.t === 'join' && m.v.name === 'Minh'));
+  assert.ok(ov.msgs.some(m => m.t === 'join' && m.v.name === 'Minh ·thử'));
+  ov.s.close(); ctl.s.close();
+});
+
+test('test characters from the simulator and the fill button are tagged ·thử', async () => {
+  const ov = await ws(`ws://localhost:${PORT}/ws?role=overlay`);
+  const ctl = await ws(`ws://localhost:${PORT}/ws?role=control`);
+  await wait(150);
+  ctl.s.send(JSON.stringify({ t: 'ctl', cmd: 'fill', n: 3 }));
+  ctl.s.send(JSON.stringify({ t: 'ctl', cmd: 'sim', kind: 'gift', name: 'Một Cái Tên Rất Dài Để Thử Cắt', gift: 'Hoa hồng', count: 1, diamonds: 1 }));
+  await wait(400);
+  const names = ov.msgs.filter(m => m.t === 'join').map(m => m.v.name);
+  assert.ok(names.length >= 4, names.join());
+  for (const n of names) assert.match(n, / ·thử$/, n);
+  ctl.s.send(JSON.stringify({ t: 'ctl', cmd: 'clear' }));
   ov.s.close(); ctl.s.close();
 });
 

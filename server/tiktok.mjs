@@ -72,7 +72,8 @@ export class TikTokLink {
         this.conn = null;
         if (this.wanted) this.scheduleRetry('mất kết nối'); else this.set({ status: 'idle' });
       }));
-      conn.on(ControlEvent.ERROR, live(e => this.log('TikTok báo lỗi: ' + (e?.info || e?.exception?.message || e?.message || e))));
+      // while connecting, the failure is already logged once by the catch below
+      conn.on(ControlEvent.ERROR, live(e => { if (this.conn === conn) this.log('TikTok báo lỗi: ' + (e?.info || e?.exception?.message || e?.message || e)); }));
       const st = await conn.connect();
       if (gen !== this.gen) { try { await conn.disconnect(); } catch {} return; }
       this.conn = conn; this.retry = 0;
@@ -108,6 +109,7 @@ function friendly(m, id) {
   if (/isn't online|not online|offline|UserOfflineError|LIVE has ended/i.test(m)) return `Kênh @${id} chưa phát trực tiếp (offline). Bật LIVE trên TikTok trước rồi kết nối lại.`;
   if (/rate ?limit|429/i.test(m)) return 'Máy chủ ký (Euler Stream) đang giới hạn lượt, đợi vài phút hoặc đặt SIGN_API_KEY.';
   if (/premium|business|euler/i.test(m)) return 'Máy chủ ký Euler Stream từ chối yêu cầu. Thử lại sau hoặc đặt SIGN_API_KEY.';
+  if (/Room ID/i.test(m)) return 'Chưa lấy được mã phòng live (TikTok trả lời chậm), đang thử lại.';
   if (/not found|does not exist|user_not_found/i.test(m)) return `Kênh @${id} không tồn tại.`;
   return m.slice(0, 200);
 }

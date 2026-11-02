@@ -23,7 +23,7 @@ input[type=number]{width:84px}
 textarea{width:100%;min-height:64px;resize:vertical}
 input:not([type=checkbox]):not([type=number]){flex:1}
 button{background:#2b1a0f;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font:inherit;cursor:pointer}
-button:hover{border-color:var(--gold)}
+button:hover{border-color:var(--gold)}button:disabled{opacity:.4;cursor:not-allowed;border-color:var(--line)}
 button.primary{background:#6b3b12;border-color:var(--gold)}button.red{background:#4a160d;border-color:var(--red)}button.on{background:#15361f;border-color:var(--green)}
 label{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px}
 label.check{color:var(--fg)}
@@ -77,7 +77,7 @@ code{background:#0f0805;border:1px solid var(--line);border-radius:6px;padding:1
     <div class="row"><label>Số bot<input id="botN" type="number" min="1" max="100" value="12"></label>
       <label>Nhịp<select id="botPace"><option value="slow">Chậm</option><option value="mid" selected>Vừa</option><option value="fast">Nhanh</option></select></label>
       <button id="btnBots">Bật bot</button></div>
-    <p class="hint">Mọi thứ từ mục này là dữ liệu thử: hiện trên màn hình nhưng không ghi vào bảng công đức trọn đời.</p>
+    <p class="hint">Mọi thứ từ mục này là dữ liệu thử: tên có nhãn "·thử", hiện trên màn hình nhưng không ghi vào bảng công đức trọn đời. Khi đã kết nối live thật, bot tự tắt, người thử được dọn đi và hai nút này bị khóa.</p>
   </section>
 
   <section>
