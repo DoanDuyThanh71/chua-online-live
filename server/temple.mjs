@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { clean, displayName, spokenName, makeFilter, clamp } from './text.mjs';
 import { parseComment, SKIN_NAMES } from './rules.mjs';
 import { GiftTracker, tier } from './gifts.mjs';
+import { CAPS, seatOrder, seatAt, ALTAR_SPOTS } from '../public/seats.js';
 
 const FORTUNES = JSON.parse(fs.readFileSync(new URL('../data/fortunes.json', import.meta.url), 'utf8'));
 
@@ -19,6 +20,7 @@ export const DEFAULT_SETTINGS = {
   thankFollow: true, sharePromptMin: 12,
   showAllTime: false, lunar: true,
   extraBadWords: '',
+  allowMove: true, vipMinCoins: 10, altarOnGiftCoins: 10,
 };
 
 const VOICES = ['vi-VN-NamMinhNeural', 'vi-VN-HoaiMyNeural'];
@@ -37,9 +39,11 @@ const SETTING_RULES = {
   prayerAuto: bool, readPrayers: bool, thankFollow: bool, sharePromptMin: v => clamp(v, 0, 120),
   showAllTime: bool, lunar: bool,
   extraBadWords: v => clean(v, 600),
+  allowMove: bool, vipMinCoins: v => clamp(v, 1, 100000), altarOnGiftCoins: v => clamp(v, 0, 100000),
 };
 
-const CAPS = [24, 36, 64, 100];
+const WALK_MS = { kinh: 16_000, altar: 13_000 };
+const MAX_WALKERS = 6;
 const DEFAULT_SKINS = ['man', 'woman', 'woman', 'man', 'granny'];
 const MILESTONES = {
   merit: [100, 300, 500, 1000, 2000, 3000, 5000, 7500, 10000],
@@ -84,6 +88,11 @@ export class Temple {
   /* ------------------------------------------------------------ session */
   newSession() {
     this.viewers = new Map();                       // seated: id -> viewer
+    this.slots = new Map();                         // seat index -> viewer id
+    this.capHigh = 24;                              // auto capacity only grows within a session, so seats never jump back
+    this.walking = new Map();                       // id -> { kind, until } for viewers away from their cushion
+    this.vip = [];                                  // ids on the golden cushions, best donor first
+    this.lastCap = 0;
     this.board = new Map();                         // session merit: id -> { name, merit, coins, demo }
     this.stats = { likes: 0, merit: 0, viewers: 0, viewersAt: 0, gifts: 0 };
     this.fired = { merit: 0, likes: 0, viewers: 0 };
@@ -103,15 +112,80 @@ export class Temple {
   applySettings(o) {
     for (const [k, fn] of Object.entries(SETTING_RULES)) if (o && k in o) this.settings[k] = fn(o[k], this.settings);
     this.filter = makeFilter(this.settings.extraBadWords.split(/[,;\n]/));
+    if (this.viewers) { this.relayout(); this.updateVip(); }
   }
 
-  capacity() {
+  capacity(size = this.viewers.size) {
     if (this.settings.seatMode !== 'auto') return +this.settings.seatMode;
-    return CAPS.find(c => this.viewers.size <= c) || 100;
+    this.capHigh = Math.max(this.capHigh, CAPS.find(c => size <= c) || 100);
+    return this.capHigh;
+  }
+
+  /* -------------------------------------------------------------- slots */
+  // The server decides who sits on which cushion, so a viewer keeps their seat when others leave and can move.
+  takeSlot(v) {
+    const cap = this.capacity();
+    if (cap !== this.lastCap) {
+      if (this.lastCap) { this.relayout(); if (v.slot >= 0) return; }   // the re-pack already gave v a cushion
+      else this.lastCap = cap;
+    }
+    for (let i = 0; i < cap; i++) if (!this.slots.has(i)) { v.slot = i; this.slots.set(i, v.id); return; }
+    v.slot = -1;
+  }
+
+  /** Grid changed size: keep everyone's relative order, pack them into the new grid's fill order. */
+  relayout() {
+    const cap = this.capacity();
+    if (cap === this.lastCap) return;
+    this.lastCap = cap;
+    const list = [...this.viewers.values()].sort((a, b) => (a.slot < 0) - (b.slot < 0) || a.slot - b.slot);
+    this.slots.clear();
+    list.forEach((v, i) => { v.slot = i < cap ? i : -1; if (v.slot >= 0) this.slots.set(i, v.id); });
+    this.send({ t: 'slots', cap, slots: list.map(v => [v.id, v.slot]) });
+  }
+
+  /** Move to the nearest free cushion in a direction (left / right / up = towards the altar / down). */
+  moveSeat(v, dir) {
+    const cap = this.capacity(), seats = seatOrder(cap), cur = seats[v.slot];
+    if (!cur) return false;
+    const dr = dir === 'up' ? -1 : dir === 'down' ? 1 : 0, dk = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;
+    for (let r = cur.r + dr, k = cur.k + dk; r >= 0 && r < cur.rows && k >= 0 && k < cur.cols; r += dr, k += dk) {
+      const i = seatAt(cap, r, k);
+      if (i >= 0 && i < cap && !this.slots.has(i)) {
+        this.slots.delete(v.slot); v.slot = i; this.slots.set(i, v.id);
+        this.send({ t: 'seat', id: v.id, slot: i });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Kinh hành (a walk around the hall) or going up to bow at the altar. At most 6 people walk at once. */
+  startWalk(v, kind, force = false) {
+    const t = this.now();
+    for (const [id, w] of this.walking) if (w.until < t) this.walking.delete(id);
+    if (this.walking.has(v.id) || this.vip.includes(v.id)) return false;
+    if (this.walking.size >= MAX_WALKERS) return false;
+    if (!force && !this.cooldown('walk:' + kind, v.id, kind === 'altar' ? 180_000 : 120_000)) return false;
+    const used = new Set([...this.walking.values()].map(w => w.spot));
+    const spot = kind === 'altar' ? ALTAR_SPOTS.findIndex((_, i) => !used.has(i)) : -1;
+    this.walking.set(v.id, { kind, until: t + WALK_MS[kind], spot });
+    this.send({ t: 'walk', id: v.id, kind, spot, ms: WALK_MS[kind] });
+    return true;
+  }
+
+  /** Top donors (seated, at least vipMinCoins) sit on the golden cushions in front of the altar. */
+  updateVip() {
+    const ids = [...this.viewers.values()].filter(v => v.coins >= this.settings.vipMinCoins)
+      .sort((a, b) => b.coins - a.coins).slice(0, 3).map(v => v.id);
+    if (ids.join('|') === this.vip.join('|')) return;
+    for (const id of ids) this.walking.delete(id);
+    this.vip = ids;
+    this.send({ t: 'vip', ids });
   }
 
   /* -------------------------------------------------------------- views */
-  pub(v) { return { id: v.id, name: v.name, skin: v.skin, avatar: v.avatar || '', coins: v.coins, demo: !!v.demo }; }
+  pub(v) { return { id: v.id, name: v.name, skin: v.skin, avatar: v.avatar || '', coins: v.coins, demo: !!v.demo, slot: v.slot }; }
 
   boards() {
     const session = [...this.board.entries()].map(([id, b]) => ({ id, ...b }))
@@ -125,7 +199,7 @@ export class Temple {
     return {
       t: 'state', settings: this.settings, viewers: [...this.viewers.values()].map(v => this.pub(v)),
       cap: this.capacity(), startedAt: this.startedAt, stats: this.stats, boards: this.boards(),
-      next: this.nextMilestones(),
+      next: this.nextMilestones(), vip: this.vip,
     };
   }
 
@@ -143,20 +217,30 @@ export class Temple {
       const pool = [...this.viewers.values()].filter(x => x.coins === 0);
       const quiet = pool.sort((a, b) => (b.demo - a.demo) || (a.lastAt - b.lastAt))[0];
       if (!quiet) return { v: null, isNew: false };
-      this.viewers.delete(quiet.id); this.send({ t: 'leave', id: quiet.id });
+      this.unseat(quiet.id);
     }
     v = {
       id, name: displayName(name || id), skin: opts.skin || DEFAULT_SKINS[this.viewers.size % DEFAULT_SKINS.length],
       avatar: opts.avatar || '', coins: 0, joinedAt: this.now(), lastAt: this.now(), demo: !!opts.demo,
-      lastText: '', lastTextAt: 0,
+      lastText: '', lastTextAt: 0, slot: -1,
     };
     this.viewers.set(id, v);
+    this.takeSlot(v);
     this.send({ t: 'join', v: this.pub(v), cap: this.capacity() });
     return { v, isNew: true };
   }
 
+  unseat(id, quiet = false) {
+    const v = this.viewers.get(id); if (!v) return;
+    if (this.slots.get(v.slot) === id) this.slots.delete(v.slot);
+    this.viewers.delete(id); this.walking.delete(id);
+    if (!quiet) this.send({ t: 'leave', id });
+  }
+
   clearSeats(demoOnly = false) {
-    for (const [id, v] of this.viewers) if (!demoOnly || v.demo) { this.viewers.delete(id); this.send({ t: 'leave', id }); }
+    for (const [id, v] of [...this.viewers]) if (!demoOnly || v.demo) this.unseat(id, true);
+    if (!this.viewers.size && this.settings.seatMode === 'auto') { this.capHigh = 24; this.lastCap = 0; }
+    this.updateVip();
     this.send(this.snapshot());
   }
 
@@ -195,10 +279,14 @@ export class Temple {
     if (!isNew && cmd.intent === 'skin' && cmd.skin !== v.skin) { v.skin = cmd.skin; this.send({ t: 'skin', id, skin: v.skin }); }
     if (bad) return;                                // seated, but nothing shown or said
     v.lastText = text; v.lastTextAt = this.now();
-    if (cmd.intent !== 'prayer') this.send({ t: 'chat', id, name: v.name, text });
-    const ritual = ['bell', 'mo', 'incense', 'bow'].includes(cmd.intent);
+    if (!['prayer', 'move'].includes(cmd.intent)) this.send({ t: 'chat', id, name: v.name, text });
+    const ritual = ['bell', 'mo', 'incense', 'bow', 'walk', 'altar'].includes(cmd.intent);
     if (this.cooldown('chat', id, 10_000)) this.addMerit(id, v.name, ritual ? MERIT.ritual : MERIT.chat, { demo: v.demo });
+    const free = this.settings.allowMove && !this.vip.includes(id) && !((this.walking.get(id)?.until || 0) > this.now());
     switch (cmd.intent) {
+      case 'move': if (free && (isNew || this.cooldown('move', id, 3_000))) this.moveSeat(v, cmd.dir); break;
+      case 'walk': if (this.settings.allowMove) this.startWalk(v, 'kinh'); break;
+      case 'altar': if (this.settings.allowMove) this.startWalk(v, 'altar'); break;
       case 'bell': if (this.cooldown('bell', id, 30_000) && this.cooldown('bell', '*', 6_000)) this.send({ t: 'bell', id }); break;
       case 'mo': if (this.cooldown('mo', id, 15_000)) this.send({ t: 'mo', id, n: 3 }); break;
       case 'incense': if (this.cooldown('incense', id, 20_000)) this.send({ t: 'incense', id }); break;
@@ -266,7 +354,7 @@ export class Temple {
       repeatCount: g.repeatCount, repeatEnd: !!g.repeatEnd, diamonds: g.diamonds, info: { ...g, name } });
     if (r.coinsAdded > 0) {
       const { v } = this.seat(id, name, { avatar: g.avatar, demo: g.demo });
-      if (v) v.coins += r.coinsAdded;
+      if (v) { v.coins += r.coinsAdded; this.updateVip(); }
       this.addMerit(id, name, r.coinsAdded * MERIT.perCoin, { coins: r.coinsAdded, demo: !!g.demo });
       this.stats.gifts += r.coinsAdded;
       this.send({ t: 'giftTick', id, coins: r.coinsAdded, total: v?.coins ?? 0 });
@@ -292,6 +380,8 @@ export class Temple {
       this.say(`Nam mô A Di Đà Phật. Phật tử ${spokenName(name)} thành tâm dâng ${giftName}${count > 1 ? ' ' + count + ' lần' : ''}${times}. ${prayer}.`, { prio: 2 });
     }
     if (this.settings.fortuneMode !== 'off' && coins >= this.settings.fortuneMinCoins && v) this.requestFortune(v, 'gift');
+    // a bigger offering: the giver walks up and bows at the altar (no cooldown), unless already on a golden cushion
+    if (v && this.settings.altarOnGiftCoins && coins >= this.settings.altarOnGiftCoins) this.startWalk(v, 'altar', true);
   }
 
   /* ------------------------------------------------------------ fortune */

@@ -5,6 +5,7 @@ import { makeFilter, spokenName, fold } from '../server/text.mjs';
 import { GiftTracker, tier } from '../server/gifts.mjs';
 import { Temple } from '../server/temple.mjs';
 import { toLunar } from '../public/lunar.js';
+import { seatOrder, seatAt } from '../public/seats.js';
 
 test('comment intents match whole words, with or without diacritics', () => {
   assert.equal(parseComment('xin xăm').intent, 'fortune');
@@ -150,6 +151,83 @@ test('settings only accept known keys and sane values', () => {
   assert.equal(temple.settings.fortuneMode, 'all');
   assert.equal(temple.settings.unknown, undefined);
   assert.equal(({}).polluted, undefined);
+});
+
+test('moving commands, and words they must not be confused with', () => {
+  assert.deepEqual(parseComment('sang trái'), { intent: 'move', dir: 'left' });
+  assert.deepEqual(parseComment('qua phai di'), { intent: 'move', dir: 'right' });
+  assert.deepEqual(parseComment('lên'), { intent: 'move', dir: 'up' });
+  assert.deepEqual(parseComment('xuống dưới'), { intent: 'move', dir: 'down' });
+  assert.equal(parseComment('kinh hành').intent, 'walk');
+  assert.equal(parseComment('đi dạo một vòng').intent, 'walk');
+  assert.equal(parseComment('lên lạy Phật').intent, 'altar');
+  assert.equal(parseComment('lạy Phật').intent, 'bow');
+  assert.equal(parseComment('trai').intent, 'skin');                 // outfit word, not "trái"
+  assert.equal(parseComment('phải không').intent, 'chat');
+  assert.equal(parseComment('hôm qua mình đi sang trái đường bị lạc').intent, 'chat');
+});
+
+test('seats belong to the server: stable when others leave, freed seats are reused', () => {
+  const { temple } = rig();
+  for (const id of ['a', 'b', 'c']) temple.onChat({ id, name: id }, 'chào');
+  assert.deepEqual(['a', 'b', 'c'].map(id => temple.viewers.get(id).slot), [0, 1, 2]);
+  temple.unseat('b');
+  assert.equal(temple.viewers.get('c').slot, 2);
+  temple.onChat({ id: 'd', name: 'd' }, 'chào');
+  assert.equal(temple.viewers.get('d').slot, 1);
+});
+
+test('moving: to the nearest free cushion in that direction, never onto someone', () => {
+  const { temple, sent, tick } = rig();
+  temple.onChat({ id: 'a', name: 'A' }, 'chào');                     // slot 0: front row, next to the aisle
+  const s0 = seatOrder(24)[0];
+  temple.onChat({ id: 'a', name: 'A' }, 'lên');
+  const s1 = seatOrder(24)[temple.viewers.get('a').slot];
+  assert.equal(s1.r, s0.r - 1); assert.equal(s1.k, s0.k);
+  assert.ok(sent.some(m => m.t === 'seat' && m.id === 'a'));
+  // someone sits right above: moving up again skips over them
+  const above = seatAt(24, s1.r - 1, s1.k);
+  temple.onChat({ id: 'b', name: 'B' }, 'chào');
+  temple.slots.delete(temple.viewers.get('b').slot); temple.viewers.get('b').slot = above; temple.slots.set(above, 'b');
+  tick(4000); temple.onChat({ id: 'a', name: 'A' }, 'lên');
+  const s2 = seatOrder(24)[temple.viewers.get('a').slot];
+  assert.equal(s2.r, s1.r - 2);
+  // too soon: ignored
+  const slot = temple.viewers.get('a').slot; temple.onChat({ id: 'a', name: 'A' }, 'xuống');
+  assert.equal(temple.viewers.get('a').slot, slot);
+});
+
+test('kinh hành: at most 6 walkers at once, then a cooldown per person', () => {
+  const { temple, sent, tick } = rig();
+  for (let i = 0; i < 8; i++) temple.onChat({ id: 'w' + i, name: 'W' + i }, 'kinh hành');
+  assert.equal(sent.filter(m => m.t === 'walk').length, 6);
+  tick(20_000);
+  temple.onChat({ id: 'w0', name: 'W0' }, 'kinh hành');               // still cooling down
+  temple.onChat({ id: 'w7', name: 'W7' }, 'kinh hành');               // was refused before, can go now
+  assert.deepEqual(sent.filter(m => m.t === 'walk').slice(6).map(m => m.id), ['w7']);
+});
+
+test('golden cushions: top 3 donors, and a big gift sends the giver to bow at the altar', () => {
+  const { temple, sent } = rig();
+  const give = (id, d) => temple.onGift({ userId: id, name: id, giftName: 'Quà', diamonds: d, repeatCount: 1 });
+  give('a', 10); give('b', 30); give('c', 20); give('d', 15);
+  assert.deepEqual(temple.vip, ['b', 'c', 'd']);
+  assert.deepEqual(sent.filter(m => m.t === 'vip').at(-1).ids, ['b', 'c', 'd']);
+  // a donor on a golden cushion ignores move commands
+  const slot = temple.viewers.get('b').slot; temple.onChat({ id: 'b', name: 'b' }, 'sang trái');
+  assert.equal(temple.viewers.get('b').slot, slot);
+  // 12 coins: not enough for top 3, so 'e' walks up to the altar instead
+  give('e', 12);
+  assert.ok(sent.some(m => m.t === 'walk' && m.id === 'e' && m.kind === 'altar'));
+});
+
+test('the hall grows 24 → 36 and everyone is re-packed in order', () => {
+  const { temple, sent } = rig();
+  for (let i = 0; i < 25; i++) temple.onChat({ id: 'v' + i, name: 'V' + i }, 'chào');
+  const msg = sent.find(m => m.t === 'slots');
+  assert.equal(msg.cap, 36);
+  assert.equal(temple.viewers.get('v24').slot, 24);
+  assert.equal(new Set([...temple.viewers.values()].map(v => v.slot)).size, 25);
 });
 
 test('lunar calendar: known Tết days and a leap month', () => {

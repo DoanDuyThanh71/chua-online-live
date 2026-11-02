@@ -63,6 +63,10 @@ code{background:#0f0805;border:1px solid var(--line);border-radius:6px;padding:1
       <button data-say="xin xăm">Xin xăm</button><button data-say="gõ mõ">Gõ mõ</button><button data-say="thỉnh chuông">Thỉnh chuông</button>
       <button data-say="thắp hương">Thắp hương</button><button data-say="cầu cho cha mẹ luôn mạnh khỏe bình an">Gửi lời nguyện</button><button data-say="sư">Đổi hình: sư</button>
     </div>
+    <div class="row">
+      <button data-say="sang trái">← Sang trái</button><button data-say="sang phải">Sang phải →</button><button data-say="lên">↑ Lên</button><button data-say="xuống">↓ Xuống</button>
+      <button data-say="kinh hành">Kinh hành</button><button data-say="lên lạy Phật">Lên lạy Phật</button>
+    </div>
     <div class="row"><button data-sim="like">♥ ×10</button><button data-sim="follow">Theo dõi</button><button data-sim="share">Chia sẻ</button></div>
     <div class="row">
       <button data-gift="Hoa hồng" data-dia="1">🌹 Hoa hồng · 1</button><button data-gift="Đèn hoa sen" data-dia="30">🪷 Hoa sen · 30</button><button data-gift="Chuông vàng" data-dia="199">🔔 Chuông · 199</button>
@@ -112,6 +116,9 @@ code{background:#0f0805;border:1px solid var(--line);border-radius:6px;padding:1
       <label class="check"><input type="checkbox" data-k="readPrayers"> Đọc lời nguyện đã duyệt</label>
       <label class="check"><input type="checkbox" data-k="showAllTime"> Xen kẽ bảng công đức trọn đời</label>
       <label class="check"><input type="checkbox" data-k="lunar"> Hiện ngày âm lịch</label>
+      <label class="check"><input type="checkbox" data-k="allowMove"> Cho người xem đổi chỗ, kinh hành, lên lạy Phật</label>
+      <label>Bồ đoàn vàng: tặng tối thiểu (xu)<input data-k="vipMinCoins" type="number" min="1"></label>
+      <label>Tặng từ (xu) thì tự lên lạy Phật, 0 = tắt<input data-k="altarOnGiftCoins" type="number" min="0"></label>
       <label class="wide">Từ cấm thêm (cách nhau bởi dấu phẩy)<input data-k="extraBadWords" placeholder="ví dụ: tên-kênh-đối-thủ, từ-tục-địa-phương"></label>
     </div>
     <div class="row"><button class="primary" id="btnSave">Lưu cài đặt</button><span class="hint" id="saved"></span></div>

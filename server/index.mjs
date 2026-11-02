@@ -77,7 +77,8 @@ const DEMO_NAMES = ['Diệu Hạnh', 'Minh Tâm', 'Thiện Đức', 'Huệ An', 
   'Liên Hương', 'Thu Hà', 'Ngọc Lan', 'Đức Anh', 'Hải Đăng', 'Mai Anh', 'Phương Thảo', 'Trung Kiên', 'Quang Huy', 'Bảo Ngọc', 'Diệu Linh'];
 const BOT_LINES = ['Nam mô A Di Đà Phật', 'Nam mô Bổn Sư Thích Ca Mâu Ni Phật', 'Con xin thành tâm sám hối', 'nữ', 'nam', 'bà', 'sư',
   'gõ mõ', 'thỉnh chuông', 'thắp hương', 'xin xăm', 'Cầu cho gia đình bình an', 'Nguyện cầu cha mẹ mạnh khỏe', 'Mô Phật, an lạc quá',
-  'Chúc mọi người một ngày bình an', 'lạy Phật'];
+  'Chúc mọi người một ngày bình an', 'lạy Phật',
+  'sang trái', 'sang phải', 'lên', 'xuống', 'kinh hành', 'lên lạy Phật'];
 let botTimer = null;
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const demoWho = (i, name) => ({ id: 'demo_' + i, name, demo: true });

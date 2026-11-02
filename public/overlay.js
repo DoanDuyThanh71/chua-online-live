@@ -3,6 +3,7 @@
 // lunar date, browser-voice fallback and audio-off previews added here.
 // URL options: ?audio=0 → silent preview (use it for every window except the one captured into the live).
 import { lunarLine } from '/lunar.js';
+import { FLOOR, GRID, seatOrder, VIP_SPOTS, ALTAR_SPOTS } from '/seats.js';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -25,42 +26,60 @@ const avatars = new Map();
 function avatar(url) { if (!url) return null; let im = avatars.get(url); if (!im) { if (avatars.size > 300) avatars.clear(); im = new Image(); im.referrerPolicy = 'no-referrer'; im.src = url; avatars.set(url, im); } return im.naturalWidth ? im : null; }
 
 /* ======================= seats ======================= */
-// Floor trapezoid in the painting: back row just below the altar, front row near the bottom.
-const FLOOR = { yTop: 1215, yBot: 1845, halfTop: 290, halfBot: 430 };
-const GRID = { 24: [6, 4], 36: [6, 6], 64: [8, 8], 100: [10, 10] };
-let cap = 24, seats = [];
-function layout(c) {
-  cap = GRID[c] ? c : 24; const [cols, rows] = GRID[cap]; seats = [];
-  for (let r = 0; r < rows; r++) {
-    const t = rows === 1 ? .5 : r / (rows - 1);
-    const y = FLOOR.yTop + (FLOOR.yBot - FLOOR.yTop) * t;
-    const half = FLOOR.halfTop + (FLOOR.halfBot - FLOOR.halfTop) * t;
-    const scale = (.26 + .24 * t) * (6 / cols) ** .75;
-    const gap = 2 * half / (cols - 1) * .93;
-    for (let k = 0; k < cols; k++) {
-      let u = (k - (cols - 1) / 2) / ((cols - 1) / 2); u = Math.sign(u) * (.14 + .86 * Math.abs(u));   // centre aisle
-      seats.push({ x: 540 + u * half, y, scale, r, k, rows, gap });
-    }
-  }
-  // front rows first, aisle side first, so a small crowd still looks full on camera
-  seats.sort((a, b) => (b.r - a.r) || (Math.abs(a.x - 540) - Math.abs(b.x - 540)));
-  reseat();
-}
+// The server decides who sits where (v.slot). A visitor's "home" is their cushion, or a golden cushion for top donors.
+let cap = 24, seats = seatOrder(24), vipIds = [];
 const visitors = new Map();
-let order = [];
-function reseat() {
-  order = order.filter(id => visitors.has(id));
-  order.forEach((id, i) => { const v = visitors.get(id), s = seats[i]; if (!v) return; v.seat = s || null; if (s && v.state === 'sit') { v.tx = s.x; v.ty = s.y; } });
+function layout(c) { cap = GRID[c] ? c : 24; seats = seatOrder(cap); for (const v of visitors.values()) v.seat = seats[v.slot] || null; }
+function home(v) {
+  const i = vipIds.indexOf(v.id);
+  return i >= 0 ? { x: VIP_SPOTS[i].x, y: VIP_SPOTS[i].y, scale: .3, gap: 200, vip: true } : v.seat;
 }
+const sc = v => home(v)?.scale || .4;
 const TEACHERS = [{ name: 'Thầy Minh Đạo', skin: 'monk', x: 300, y: 1085, s: .36 }, { name: 'Sư Trụ Trì', skin: 'monk', x: 540, y: 1100, s: .4, master: true }, { name: 'Thầy Tâm Từ', skin: 'monk', x: 780, y: 1085, s: .36 }];
 function addVisitor(p, instant) {
-  if (visitors.has(p.id)) { Object.assign(visitors.get(p.id), { name: p.name, skin: p.skin, avatar: p.avatar, coins: p.coins }); return; }
-  const v = { ...p, state: 'walk', x: 540, y: 2020, frame: 0, ft: 0, sitT: 0, flip: false, fade: 0, bubble: null, glow: 0, bow: 0, phase: Math.random() * 6.28 };
-  visitors.set(p.id, v); order.push(p.id); reseat();
-  if (instant || !hasAnim(v.skin) || !v.seat) { v.state = 'sit'; v.frame = 7; v.x = v.seat?.x || 540; v.y = v.seat?.y || 1500; v.fade = instant ? 1 : 0; }
+  if (visitors.has(p.id)) { Object.assign(visitors.get(p.id), { name: p.name, skin: p.skin, avatar: p.avatar, coins: p.coins }); setSlot(visitors.get(p.id), p.slot); return; }
+  const v = { ...p, seat: seats[p.slot] || null, state: 'walk', x: 540, y: 2020, frame: 0, ft: 0, sitT: 0, flip: false, fade: 0, bubble: null, glow: 0, bow: 0,
+    phase: Math.random() * 6.28, joined: performance.now(), path: null };
+  visitors.set(p.id, v);
+  const h = home(v);
+  if (instant || !hasAnim(v.skin) || !h) { v.state = 'sit'; v.frame = 7; v.x = h?.x || 540; v.y = h?.y || 1500; v.fade = instant ? 1 : 0; }
 }
-function removeVisitor(id) { visitors.delete(id); reseat(); }
-const seated = v => v && v.seat;
+function removeVisitor(id) { visitors.delete(id); }
+const seated = v => v && home(v);
+
+/* ======================= moving around ======================= */
+// Sprites only exist walking away from the camera (up the hall). Going up or sideways is animated; going down
+// (towards the camera) fades out and reappears at the destination instead.
+function setSlot(v, slot) {
+  if (!v || v.slot === slot && v.seat === seats[slot]) return;
+  v.slot = slot; v.seat = seats[slot] || null;
+  if (vipIds.includes(v.id) || v.state === 'path' || v.state === 'kneel' || v.state === 'stand') return;
+  travel(v, home(v));
+}
+/** Get from where v is to `to` and sit there: walk if it is up or level, otherwise fade across. */
+function travel(v, to, then = 'sit') {
+  if (!to) return;
+  if (to.y <= v.y + 4 && hasAnim(v.skin)) { v.path = [{ x: v.x, y: to.y }, { x: to.x, y: to.y }]; v.after = then; v.state = 'stand'; v.sitT = 0; }
+  else { v.state = 'fade'; v.after = then; v.dest = to; }
+}
+function startWalk(v, kind, spot) {
+  if (!v || !home(v)) return;
+  const x0 = v.x;
+  if (kind === 'altar') {
+    const s = ALTAR_SPOTS[spot] || ALTAR_SPOTS[0];
+    v.path = [{ x: x0, y: s.y }, { x: s.x, y: s.y }]; v.after = 'kneel';
+  } else {
+    // kinh hành: up your side of the hall, across in front of the altar, back down the other side (fading)
+    const side = x0 < 540 ? -1 : 1, lane = 540 + side * 470, other = 540 - side * 470;
+    v.path = [{ x: x0, y: 1200 }, { x: lane - side * 120, y: 1200 }, { x: other, y: 1196 }]; v.after = 'home';
+  }
+  v.state = 'stand'; v.sitT = 0; v.glow = Math.max(v.glow, .6);
+}
+const walkScale = y => {
+  const gf = (6 / ((GRID[cap] || GRID[24])[0])) ** .7, d = (y - FLOOR.yTop) / (FLOOR.yBot - FLOOR.yTop);
+  const blend = Math.max(0, Math.min(1, -d * 4));                    // above the floor (near the altar) all grids look alike
+  return (.26 + .26 * Math.max(0, Math.min(1, d))) * (gf + (1 - gf) * blend);
+};
 
 /* ======================= HUD ======================= */
 let startedAt = Date.now(), settings = { music: true, mo: true, moBpm: 52, volume: 80, lunar: true, showAllTime: false }, boards = { session: [], allTime: [] }, stats = { likes: 0, merit: 0 }, next = { merit: 100, likes: 1000 };
@@ -81,6 +100,9 @@ function renderGoal() {
   $('goalText').textContent = `Công đức đạo tràng ${fmt(stats.merit)} / ${fmt(next.merit)}`;
   $('likes').textContent = fmt(stats.likes || 0);
 }
+// the guide card has two pages (rituals / moving around) that take turns
+let guidePage = 0;
+setInterval(() => { const pages = document.querySelectorAll('#guide .page'); pages[guidePage].classList.remove('show'); guidePage = (guidePage + 1) % pages.length; pages[guidePage].classList.add('show'); }, 9000);
 function renderLunar() { $('lunar').textContent = settings.lunar ? '☸ ' + lunarLine().text : ''; }
 setInterval(renderLunar, 60_000);
 setInterval(() => { const s = Math.floor((Date.now() - startedAt) / 1000); $('timer').textContent = [s / 3600, s / 60 % 60, s % 60].map(x => String(Math.floor(x)).padStart(2, '0')).join(':'); }, 1000);
@@ -207,14 +229,14 @@ const fx = [], petals = [];
 function rise(kind, x, y, scale, life = 2.6) { if (fx.length < 40) fx.push({ kind, x, y, t: 0, life, scale }); }
 function giftFx(v, tier) {
   v.glow = 1; v.bow = 1;
-  const kind = tier >= 3 ? 'bell' : tier >= 2 ? 'lotus' : 'incense', s = v.seat?.scale || .4;
+  const kind = tier >= 3 ? 'bell' : tier >= 2 ? 'lotus' : 'incense', s = sc(v);
   rise(kind, v.x, v.y - 220 * s, s * (tier >= 3 ? 1.5 : 1.1), tier >= 3 ? 3.4 : 2.4);
   for (let i = 0; i < (tier >= 3 ? 22 : tier >= 2 ? 10 : 4); i++) petal(v.x + (Math.random() - .5) * 120, v.y - 80, (Math.random() - .5) * 40, -(70 + Math.random() * 90), 2.6 + Math.random(), .16 + Math.random() * .14);
   if (tier >= 3) { bell(true); rain(30); }
 }
 function rain(n) { for (let i = 0; i < n; i++) petal(540 + (Math.random() - .5) * 700, 300 + Math.random() * 250, (Math.random() - .5) * 40, 30 + Math.random() * 50, 5, .2 + Math.random() * .15); }
 function petal(x, y, vx, vy, life, s, heart) { if (petals.length < 260) petals.push({ x, y, vx, vy, t: 0, life, s, heart }); }
-function hearts(v, n) { for (let i = 0; i < Math.min(6, n); i++) petal(v.x + (Math.random() - .5) * 60, v.y - 140 * (v.seat?.scale || .4), (Math.random() - .5) * 20, -(50 + Math.random() * 40), 1.6, .08, true); }
+function hearts(v, n) { for (let i = 0; i < Math.min(6, n); i++) petal(v.x + (Math.random() - .5) * 60, v.y - 140 * sc(v), (Math.random() - .5) * 20, -(50 + Math.random() * 40), 1.6, .08, true); }
 function sideHearts(n) { for (let i = 0; i < Math.min(5, n); i++) petal(980 + (Math.random() - .5) * 60, 1800, (Math.random() - .5) * 30, -(140 + Math.random() * 80), 2.4, .08, true); }
 
 /* ======================= server link ======================= */
@@ -231,11 +253,24 @@ function onMsg(m) {
   switch (m.t) {
     case 'state':
       Object.assign(settings, m.settings); applySettings(); startedAt = m.startedAt;
-      visitors.clear(); order = []; layout(m.cap); for (const p of m.viewers) addVisitor(p, true);
+      visitors.clear(); vipIds = m.vip || []; layout(m.cap); for (const p of m.viewers) addVisitor(p, true);
       boards = m.boards; stats = m.stats; next = m.next; updateCount(); renderMerit(); renderGoal(); break;
     case 'settings': Object.assign(settings, m.settings); applySettings(); if (m.cap !== cap) { layout(m.cap); updateCount(); } break;
     case 'join': if (m.cap !== cap) layout(m.cap); addVisitor(m.v, m.v.demo && visitors.size > 8); updateCount(); break;
     case 'leave': removeVisitor(m.id); updateCount(); break;
+    case 'slots': layout(m.cap); for (const [id, slot] of m.slots) setSlot(visitors.get(id), slot); updateCount(); break;
+    case 'seat': setSlot(v, m.slot); break;
+    case 'walk': if (v) startWalk(v, m.kind, m.spot); break;
+    case 'vip': {
+      const was = vipIds; vipIds = m.ids || [];
+      for (const id of new Set([...was, ...vipIds])) {
+        const w = visitors.get(id); if (!w || w.state === 'walk') continue;
+        if (vipIds.includes(id) && !was.includes(id)) { w.glow = 1.5; travel(w, home(w)); }       // walks up to a golden cushion
+        else if (!vipIds.includes(id) && was.includes(id)) travel(w, home(w));                  // back to their own cushion
+        else if (vipIds.indexOf(id) !== was.indexOf(id)) travel(w, home(w));                     // swapped golden cushions
+      }
+      break;
+    }
     case 'skin': if (v) { v.skin = m.skin; v.glow = .8; if (v.state !== 'sit') { v.state = 'sit'; v.frame = 7; } } break;
     case 'chat': if (v) { v.bubble = { text: m.text, until: performance.now() + 6000 }; v.bow = .6; } break;
     case 'giftTick': if (v) { v.coins = m.total; v.glow = Math.max(v.glow, .7); } break;
@@ -246,9 +281,9 @@ function onMsg(m) {
       if (settings.mo && AC && performance.now() - lastLikeMo > 450) { lastLikeMo = performance.now(); mo(.28); }
       break;
     case 'board': boards = m.boards; stats = m.stats; next = m.next; renderMerit(); renderGoal(); break;
-    case 'bell': bell(m.big || !v); if (v) { v.glow = 1; v.bow = 1; rise('bell', v.x, v.y - 200 * (v.seat?.scale || .4), (v.seat?.scale || .4) * 1.2); } break;
-    case 'mo': for (let i = 0; i < (m.n || 1); i++) setTimeout(() => mo(), i * 420); if (v) { v.bow = 1; rise('mo', v.x, v.y - 200 * (v.seat?.scale || .4), (v.seat?.scale || .4) * 1.1, 1.6); } break;
-    case 'incense': if (v) { v.bow = 1; v.glow = .7; rise('incense', v.x, v.y - 200 * (v.seat?.scale || .4), (v.seat?.scale || .4) * 1.2, 3); } break;
+    case 'bell': bell(m.big || !v); if (v) { v.glow = 1; v.bow = 1; rise('bell', v.x, v.y - 200 * sc(v), sc(v) * 1.2); } break;
+    case 'mo': for (let i = 0; i < (m.n || 1); i++) setTimeout(() => mo(), i * 420); if (v) { v.bow = 1; rise('mo', v.x, v.y - 200 * sc(v), sc(v) * 1.1, 1.6); } break;
+    case 'incense': if (v) { v.bow = 1; v.glow = .7; rise('incense', v.x, v.y - 200 * sc(v), sc(v) * 1.2, 3); } break;
     case 'bow': if (v) v.bow = 1; break;
     case 'follow': toast(`🙏 ${m.name} đã theo dõi đạo tràng`); bell(); if (v) v.glow = 1; break;
     case 'share': toast(`🌸 ${m.name} đã chia sẻ phiên live`); if (v) v.glow = 1; break;
@@ -296,7 +331,8 @@ function bubble(text, x, y, s) {
 function labelSet(list) {
   if (list.length <= 36) return null;
   const keep = new Set(list.filter(v => v.coins > 0).sort((a, b) => b.coins - a.coins).slice(0, 6).map(v => v.id));
-  for (const id of order.slice(-5)) keep.add(id);
+  for (const v of list.slice().sort((a, b) => b.joined - a.joined).slice(0, 5)) keep.add(v.id);
+  for (const v of list) if (v.state !== 'sit' || vipIds.includes(v.id)) keep.add(v.id);     // whoever is moving or on a golden cushion
   return keep;
 }
 let last = performance.now();
@@ -315,36 +351,66 @@ function frame(now) {
   }
   // spotlight on whoever is drawing a fortune card
   if (spot && now < spot.until && visitors.has(spot.v.id)) {
-    const v = spot.v, s = v.seat?.scale || .4;
+    const v = spot.v, s = sc(v);
     ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .55 + .15 * Math.sin(t * 3);
     const g = ctx.createRadialGradient(v.x, v.y - 120 * s, 10, v.x, v.y - 120 * s, 320 * s); g.addColorStop(0, 'rgba(255,220,140,.9)'); g.addColorStop(1, 'rgba(255,180,80,0)');
     ctx.fillStyle = g; ctx.fillRect(v.x - 340 * s, v.y - 460 * s, 680 * s, 560 * s); ctx.restore();
   } else spot = null;
+  // golden cushions for the top donors
+  VIP_SPOTS.forEach((p, i) => {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = vipIds[i] ? .55 + .15 * Math.sin(t * 2 + i) : .18;
+    const g = ctx.createRadialGradient(p.x, p.y - 6, 4, p.x, p.y - 6, 70); g.addColorStop(0, 'rgba(255,215,120,.95)'); g.addColorStop(1, 'rgba(255,170,60,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(p.x, p.y - 6, 70, 22, 0, 0, 6.29); ctx.fill(); ctx.restore();
+  });
   // visitors back to front
   const bubbles = [], list = [...visitors.values()].filter(seated).sort((a, b) => a.y - b.y), labels = labelSet(list);
   for (const v of list) {
-    const anim = hasAnim(v.skin), s = v.seat?.scale || .4;
-    if (v.state === 'walk') {
-      const depth = (v.y - FLOOR.yTop) / (FLOOR.yBot - FLOOR.yTop), sp = (170 + 190 * Math.max(0, Math.min(1.5, depth))) * dt, dx = v.seat.x - v.x, dy = v.seat.y - v.y;
+    const anim = hasAnim(v.skin), h = home(v), s = h.scale;
+    const depth = (v.y - FLOOR.yTop) / (FLOOR.yBot - FLOOR.yTop), sp = (170 + 190 * Math.max(0, Math.min(1.5, depth))) * dt;
+    const step = () => { v.ft += dt; if (v.ft > .15) { v.ft = 0; v.frame = (v.frame + 1) % 4; } };
+    if (v.state === 'walk') {                                                   // entering: up the centre aisle, then sideways
+      const dx = h.x - v.x, dy = h.y - v.y;
       if (Math.abs(dy) > 3) { v.y += Math.max(-sp, Math.min(sp, dy)); v.x += (540 - v.x) * Math.min(1, dt * 6); v.flip = false; } else { v.x += Math.max(-sp, Math.min(sp, dx)); v.flip = dx < 0; }
-      v.ft += dt; if (v.ft > .15) { v.ft = 0; v.frame = (v.frame + 1) % 4; }
-      if (Math.abs(v.x - v.seat.x) < 2 && Math.abs(v.y - v.seat.y) < 3) { v.x = v.seat.x; v.y = v.seat.y; v.state = 'sitting'; v.sitT = 0; v.flip = false; }
+      step();
+      if (Math.abs(v.x - h.x) < 2 && Math.abs(v.y - h.y) < 3) { v.x = h.x; v.y = h.y; v.state = 'sitting'; v.sitT = 0; v.flip = false; }
     } else if (v.state === 'sitting') { v.sitT += dt; v.frame = 4 + Math.min(3, Math.floor(v.sitT / .22)); if (v.sitT > .9) { v.state = 'sit'; v.frame = 7; } }
-    else { v.x += (v.seat.x - v.x) * Math.min(1, dt * 3); v.y += (v.seat.y - v.y) * Math.min(1, dt * 3); }
-    v.fade = Math.min(1, v.fade + dt * 2); v.glow = Math.max(0, v.glow - dt * .45); v.bow = Math.max(0, v.bow - dt * .7);
-    const ws = v.state === 'walk' ? (.26 + .26 * Math.max(0, Math.min(1, (v.y - FLOOR.yTop) / (FLOOR.yBot - FLOOR.yTop)))) * ((6 / ((GRID[cap] || GRID[24])[0])) ** .7) : s;
+    else if (v.state === 'stand') {                                              // getting up: the sit-down frames backwards
+      v.sitT += dt; v.frame = 7 - Math.min(3, Math.floor(v.sitT / .18)); if (v.sitT > .72) { v.state = 'path'; v.frame = 0; }
+    } else if (v.state === 'path') {
+      const p = v.path?.[0];
+      if (!p) {
+        v.flip = false;
+        if (v.after === 'kneel') { v.state = 'kneel'; v.sitT = 0; }
+        else if (v.after === 'sit') { v.state = 'sitting'; v.sitT = 0; }
+        else travel(v, h);
+      } else {
+        const dx = p.x - v.x, dy = p.y - v.y, d = Math.hypot(dx, dy), k = Math.min(1, sp / (d || 1));
+        v.x += dx * k; v.y += dy * k; if (Math.abs(dx) > 2) v.flip = dx < 0; step();
+        if (d < 3) v.path.shift();
+      }
+    } else if (v.state === 'kneel') {                                            // kneel, three bows, then go home
+      v.sitT += dt; v.frame = 4 + Math.min(3, Math.floor(v.sitT / .22));
+      for (const b of [1.3, 2.5, 3.7]) if (v.sitT - dt < b && v.sitT >= b) { v.bow = 1; v.glow = Math.max(v.glow, .5); }
+      if (v.sitT > 4.9) travel(v, h);
+    } else if (v.state === 'fade') {                                             // walking towards the camera is not drawn: cross-fade
+      v.fade -= dt * 2.5;
+      if (v.fade <= 0) { const d = v.dest || h; v.x = d.x; v.y = d.y; v.fade = 0; v.state = 'sit'; v.frame = 7; v.flip = false; }
+    } else { v.x += (h.x - v.x) * Math.min(1, dt * 3); v.y += (h.y - v.y) * Math.min(1, dt * 3); }
+    if (v.state !== 'fade') v.fade = Math.min(1, v.fade + dt * 2);
+    v.glow = Math.max(0, v.glow - dt * .45); v.bow = Math.max(0, v.bow - dt * .7);
+    const ws = v.state === 'sit' || v.state === 'sitting' ? s : walkScale(v.y);
     if (v.glow > 0 || v.skin === 'master') {
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.max(Math.min(1, v.glow) * .75, v.skin === 'master' ? .35 + .1 * Math.sin(t * 1.6) : 0);
       const g = ctx.createRadialGradient(v.x, v.y - 110 * ws, 8, v.x, v.y - 110 * ws, 200 * ws); g.addColorStop(0, 'rgba(255,205,120,.95)'); g.addColorStop(1, 'rgba(255,160,60,0)'); ctx.fillStyle = g; ctx.fillRect(v.x - 230 * ws, v.y - 340 * ws, 460 * ws, 400 * ws); ctx.restore();
     }
-    const breathe = v.state === 'sit' ? Math.sin(t * 1.1 + v.phase) * 2 * ws : 0, bowK = v.state === 'sit' ? Math.sin(Math.min(1, v.bow) * Math.PI) * .06 : 0;
+    const breathe = v.state === 'sit' ? Math.sin(t * 1.1 + v.phase) * 2 * ws : 0, bowK = v.state === 'sit' || v.state === 'kneel' ? Math.sin(Math.min(1, v.bow) * Math.PI) * (v.state === 'kneel' ? .14 : .06) : 0;
     ctx.save(); ctx.globalAlpha = v.fade; ctx.translate(v.x, v.y); if (bowK) ctx.transform(1, 0, 0, 1 - bowK, 0, 0);
     let topY;
-    if (anim) { const a = ANIM[v.skin], k = ws * 1.05 * 260 / a.seatH; if (v.flip) ctx.scale(-1, 1); ctx.drawImage(A['anim_' + v.skin], v.frame * a.fw, 0, a.fw, a.fh, -a.fw * k / 2, -a.fh * k + breathe, a.fw * k, a.fh * k); topY = (v.state === 'sit' ? a.seatH : a.fh * .97) * k; }
+    if (anim) { const a = ANIM[v.skin], k = ws * 1.05 * 260 / a.seatH; if (v.flip) ctx.scale(-1, 1); ctx.drawImage(A['anim_' + v.skin], v.frame * a.fw, 0, a.fw, a.fh, -a.fw * k / 2, -a.fh * k + breathe, a.fw * k, a.fh * k); topY = (v.frame >= 6 ? a.seatH : a.fh * .97) * k; }
     else { const sk = v.skin === 'master' ? 'monk' : v.skin; sprite(A[sk] || A.man, 0, breathe, ws * 1.05); topY = 260 * ws; }
     ctx.restore();
     const ty = v.y - topY - 14 * ws / .4;
-    if (!labels || labels.has(v.id) || v.bubble) tag(v.name, v.x, ty, ws, v.skin === 'master' || v.coins >= 99 ? 'gold' : '', avatar(v.avatar), v.state === 'sit' ? v.seat?.gap : 0);
+    if (!labels || labels.has(v.id) || v.bubble) tag(v.name, v.x, ty, ws, v.skin === 'master' || v.coins >= 99 ? 'gold' : '', avatar(v.avatar), v.state === 'sit' && !h.vip ? h.gap : 0);
     if (v.bubble && now < v.bubble.until) bubbles.push([v.bubble.text, v.x, ty - Math.max(18, 30 * ws / .4), ws]); else v.bubble = null;
   }
   for (const b of bubbles.slice(-8)) bubble(...b);

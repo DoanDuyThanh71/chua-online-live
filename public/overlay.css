@@ -37,7 +37,9 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:var(-
 /* side cards */
 .card{background:var(--panel);border:2px solid var(--line);border-radius:22px;padding:14px 18px;font-size:22px;line-height:1.34}
 #guide{left:22px;top:560px;width:292px}
-#guide div+div{border-top:1px solid rgba(226,176,79,.3);margin-top:8px;padding-top:8px}
+#guide .page{display:none}#guide .page.show{display:block;animation:pagein .5s ease}
+#guide .page div+div{border-top:1px solid rgba(226,176,79,.3);margin-top:8px;padding-top:8px}
+@keyframes pagein{from{opacity:0}to{opacity:1}}
 #guide b{color:var(--gold2)}
 #merit{right:22px;top:560px;width:292px;text-align:center}
 #merit h3{margin:0 0 8px;font-family:var(--display);font-size:28px;color:var(--gold2);letter-spacing:.05em}

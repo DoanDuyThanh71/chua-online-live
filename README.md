@@ -39,9 +39,14 @@ npm start
 | `gõ mõ` · `thỉnh chuông` · `thắp hương` · `lạy Phật` | Hiệu ứng và âm thanh tương ứng trên nhân vật của người đó, +3 công đức |
 | `cầu …` / `nguyện …` / `xin cho …` | Lời nguyện vào hàng **chờ duyệt**. Duyệt xong thì thả đèn trời và đọc lên live |
 | `nam` `nữ` `sư` `ni` `tiểu` `bà` `cao tăng` | Đổi hình nhân vật. Chỉ áp dụng khi bình luận chỉ có đúng chữ đó, nên "Nam mô A Di Đà Phật" không bị hiểu là "nam" |
+| `sang trái` · `sang phải` · `lên` · `xuống` | Dời sang bồ đoàn trống gần nhất theo hướng đó. Đi lên hoặc đi ngang thì nhân vật đứng dậy và bước sang. Đi xuống thì mờ đi rồi hiện ở chỗ mới. Mỗi 3 giây một lần |
+| `kinh hành` / `đi dạo` | Đứng dậy, đi một vòng trước bàn thờ rồi về chỗ (2 phút một lần) |
+| `lên lạy Phật` | Đi lên trước bàn thờ, quỳ lạy 3 lạy rồi về chỗ (3 phút một lần) |
 | Thả tim | Tim bay trên nhân vật, tiếng mõ nhẹ, +1 công đức mỗi tim (tối đa 15 mỗi phút) |
 | Theo dõi / Chia sẻ | Thông báo cảm ơn, +10 / +5 công đức |
 | Tặng quà | Banner xướng tên kèm "lần thứ n", giọng đọc hồi hướng (đọc lời nguyện gần nhất của người đó nếu lời đó sạch), hiệu ứng theo giá trị quà, +10 công đức mỗi xu. Quà từ 5 xu được rút thẻ và được xếp trước người rút miễn phí |
+
+**Bồ đoàn vàng**: 3 người tặng nhiều xu nhất trong buổi, mỗi người tối thiểu 10 xu, được đi lên ngồi ba bồ đoàn vàng ngay trước bàn thờ, và đổi vị trí theo thứ hạng. Ai tặng từ 10 xu mà chưa vào top 3 thì tự đi lên lạy Phật. Cùng lúc tối đa 6 người được đi lại để màn hình không bị loạn. Người đang ngồi bồ đoàn vàng không dời chỗ được.
 
 **Mốc cộng đồng**: khi tổng công đức, số tim hoặc số người xem chạm mốc (100, 300, 500, 1.000…) thì có mưa hoa, chuông lớn và lời hồi hướng. Mỗi mốc chỉ chạy một lần mỗi buổi. Nếu một lần vượt nhiều mốc cùng lúc thì chỉ chúc mốc cao nhất.
 
@@ -56,6 +61,7 @@ npm start
   - nhắc người xem chia sẻ định kỳ
   - xen kẽ bảng công đức trọn đời
   - ngày âm lịch
+  - cho phép người xem đổi chỗ, kinh hành, lên lạy Phật; mức xu cho bồ đoàn vàng và cho tự lên lạy Phật
   - danh sách từ cấm thêm
 - **Buổi live**: "Bắt đầu buổi mới" đặt lại bảng công đức của buổi. Công đức trọn đời vẫn giữ, muốn xóa phải gõ đúng chữ `XÓA`.
 - **Dữ liệu thử** từ nút giả lập hoặc bot chỉ hiện trên màn hình, không bao giờ ghi vào bảng công đức trọn đời.
@@ -111,7 +117,7 @@ Pháp luật Việt Nam cấm lợi dụng tín ngưỡng để trục lợi. B�
 npm test
 ```
 
-Có 20 test dùng `node:test`: cú pháp bình luận, bộ lọc từ, đếm chuỗi quà, công đức, mốc, hàng đợi thẻ, duyệt lời nguyện, nhường chỗ, cài đặt, âm lịch. Phần server được khởi động thật để thử các lớp bảo mật.
+Có 26 test dùng `node:test`: cú pháp bình luận, bộ lọc từ, đếm chuỗi quà, công đức, mốc, hàng đợi thẻ, duyệt lời nguyện, nhường chỗ, đổi chỗ, kinh hành, bồ đoàn vàng, cài đặt, âm lịch. Phần server được khởi động thật để thử các lớp bảo mật.
 
 ```
 server/
@@ -127,6 +133,7 @@ public/
   overlay.*    màn hình 9:16
   control.*    bảng điều khiển
   lunar.js     âm lịch
+  seats.js     vị trí bồ đoàn (dùng chung cho server và overlay)
 data/fortunes.json   30 thẻ an lạc
 ```
 
