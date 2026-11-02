@@ -1,6 +1,6 @@
 # Kế hoạch & bối cảnh dự án
 
-Cập nhật: 02/11/2026. File này để ai mở repo (kể cả Claude ở phiên làm việc sau) nắm được đã làm gì, đang chờ gì, đã quyết định gì và vì sao.
+Cập nhật: 02/11/2026 (tối). File này để ai mở repo (kể cả Claude ở phiên làm việc sau) nắm được đã làm gì, đang chờ gì, đã quyết định gì và vì sao.
 
 ## Quy tắc làm việc
 
@@ -25,6 +25,7 @@ Bản chánh điện là sản phẩm chính. Mọi tính năng mới phục v�
 | 3 | **Danh hiệu trọn đời** (Phật tử → Thiện hữu → Hộ pháp → Đại thí chủ) | Dễ | Không | Tổng xu đã được lưu sẵn. Nên định danh người xem bằng mã số tài khoản thay vì @username, vì người xem đổi @username sẽ mất danh hiệu |
 | 4 | **Bảng Lễ vật**: khung trên overlay ghi quà nào làm gì | Dễ (chia theo mức xu), trung bình (gán từng món quà) | Danh sách quà người xem hay tặng: tên và số xu | Danh sách quà TikTok thay đổi theo khu vực |
 | 5 | **Mục tiêu đạo tràng mỗi buổi**: đủ X xu thì mở hiệu ứng đặc biệt | Trung bình | Không, nếu dùng lại hình có sẵn | Không đặt mục tiêu quá cao |
+| 6 | **Order nhạc thiền / bài tụng**: tặng quà để chọn bài kế tiếp từ thư viện của mình, có hàng chờ | Dễ | **Thư viện nhạc thiền có quyền phát** (hiện chỉ có 2 bài AI từ kentjuno) | Gần như không kênh chùa online nào làm. Gộp được với ý "Trưởng đạo tràng chọn nhạc". Xem phần DJ bên dưới |
 
 Ý tưởng khác cho bản chánh điện, chưa đánh giá chi tiết:
 - hoa đăng hoặc đèn lồng mang tên treo suốt buổi
@@ -44,6 +45,33 @@ Bản chánh điện là sản phẩm chính. Mọi tính năng mới phục v�
 - Nguồn lực lớn nhất là **hình ảnh**: cảnh âm phủ nhiều tầng, Diêm Vương, quỷ sứ, lửa, xích.
 - Trình tự đề xuất: làm bản thử với hình vẽ bằng code và live thử để xem phản ứng. Nếu khán giả thích thì tạo bộ hình đẹp bằng AI theo mô tả viết sẵn, rồi ghép vào.
 - Rủi ro: cảnh địa ngục đặt cạnh chánh điện có thể bị một số người chê phản cảm.
+
+## Để sau: DJ / order nhạc tự do (đánh giá 02/11/2026)
+
+Ý tưởng: người xem tặng quà để order nhạc, công cụ tự phát và tự mix.
+
+**Đã có người làm**:
+- TikFinity ([Song Requests](https://tikfinity.zerody.one/tiktok/songrequests), order qua Spotify)
+- BetterTok (hàng chờ Spotify, có thể chỉ cho top người tặng quà order)
+- IndoFinity (YouTube Music)
+- Một số phần mềm Việt Nam "tặng quà tự phát nhạc"
+- Chính TikTok được cho là có tính năng "Song Gift" (chưa có xác nhận chính thức)
+
+Vì vậy **không nên tự viết lại**.
+
+**Rủi ro chính là bản quyền nhạc.**
+- TikTok LIVE có thể tắt tiếng hoặc dừng live khi phát nhạc không có quyền. Nhạc có trong thư viện TikTok cho video thường chưa chắc được phép dùng khi live.
+- Nhiều DJ đã bỏ TikTok LIVE sau lần TikTok đổi chính sách ([Daily Dot](https://dailydot.com/tiktok-live-djs-flee)). Điều khoản âm nhạc tháng 1/2026 hạn chế DJ set trên live ([Hypebot](https://www.hypebot.com/new-tiktok-m.md)).
+- Không được lấy nhạc từ YouTube hay Spotify để phát lại.
+
+| Phương án | Độ khó | Nguồn lực | Kết luận |
+|---|---|---|---|
+| A. Order nhạc thiền từ thư viện của mình (việc số 6 ở trên) | Dễ | Thư viện có quyền phát | **Nên làm** |
+| B. DJ đơn giản: hàng chờ, quà to được chen lên trước, chuyển bài mượt, hình sàn DJ | Trung bình | Khoảng 50–100 bài có quyền phát, hình sàn DJ mới | Để sau. Làm thành **cảnh hoặc kênh riêng**, không trộn vào chánh điện (DJ cạnh chánh điện dễ bị chê phản cảm) |
+| C. DJ "thật": tự khớp nhịp, chỉnh âm sắc khi chuyển bài | Khó | Như B, cộng nhiều thời gian thử | Không đáng làm lúc này |
+| D. Cho order bài bất kỳ (YouTube, Spotify) | — | — | **Không làm**: dính bản quyền |
+
+Nếu muốn thử DJ: dùng TikFinity trên **một kênh phụ** trước, không đụng kênh chính, để xem TikTok có tắt tiếng hay dừng live không.
 
 ## Đã quyết định không làm
 
