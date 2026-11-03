@@ -15,7 +15,7 @@ Cần **Node.js 20 trở lên**: tải bản LTS tại https://nodejs.org.
 2. Trong bảng điều khiển, bấm **Mở overlay (có âm thanh)**.
 3. Chưa live vẫn thử được: dùng mục **Thử tương tác** hoặc **Bật bot**.
 
-**Giọng đọc chạy trên máy (nên cài)**: nháy đúp `cai-giong-vieneu.bat` một lần. File này cài [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) (mô hình giọng Việt mã nguồn mở của Phạm Nguyễn Ngọc Bảo, Apache-2.0) vào `tools\VieNeu-TTS`. Cần **Git** và **Python 3.10–3.13**. Có card NVIDIA thì cài bản GPU (tải khoảng 3 GB). Sau đó `start.bat` tự bật giọng VieNeu trong một cửa sổ thu nhỏ, và bảng điều khiển có thêm 10 giọng VieNeu (mặc định nên chọn **Thiền Tâm Đức**).
+**Giọng đọc chạy trên máy (nên cài)**: nháy đúp `cai-giong-vieneu.bat` một lần. File này cài [VieNeu-TTS](https://github.com/pnnbao97/VieNeu-TTS) (mô hình giọng Việt mã nguồn mở của Phạm Nguyễn Ngọc Bảo, Apache-2.0) vào `tools\VieNeu-TTS`. Cần **Git** và **Python 3.10–3.13**. Có card NVIDIA thì cài bản GPU (tải khoảng 3 GB) và chạy giọng **v3 Turbo** (10 giọng, nên chọn **Thiền Tâm Đức**). Máy không có card NVIDIA thì tự chạy bản **v3 Nano** bằng CPU qua `scripts/giong_nhe.py` (9 giọng riêng, cộng Mai Anh và Trúc Ly; trên Core i5-14500 câu 7 giây mất khoảng 1 giây để tạo). Sau đó `start.bat` tự bật giọng VieNeu trong một cửa sổ thu nhỏ.
 
 Hoặc chạy bằng dòng lệnh:
 

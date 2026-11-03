@@ -24,7 +24,9 @@ export const DEFAULT_SETTINGS = {
 };
 
 // Edge voices, plus VieNeu-TTS presets (local model, see server/tts.mjs)
-export const VIENEU_VOICES = ['Thiền Tâm Đức', 'Hải Đăng', 'Thiện Minh', 'Minh Đức', 'Quang Sơn', 'Ngọc Huyền', 'Mai Anh', 'Thùy Dung', 'Ngọc Trân', 'Trúc Ly'];
+// Turbo presets (GPU) first, then the Nano-only presets (CPU, scripts/giong_nhe.py); Mai Anh and Trúc Ly exist in both
+export const VIENEU_VOICES = ['Thiền Tâm Đức', 'Hải Đăng', 'Thiện Minh', 'Minh Đức', 'Quang Sơn', 'Ngọc Huyền', 'Mai Anh', 'Thùy Dung', 'Ngọc Trân', 'Trúc Ly',
+  'Minh Quân', 'Hữu Quân', 'Mạnh Dũng', 'Đức Trí', 'Anh Khôi', 'Adam', 'Ái Hân', 'Mỹ Duyên', 'Xuân Tiên'];
 const VOICES = ['vi-VN-NamMinhNeural', 'vi-VN-HoaiMyNeural', ...VIENEU_VOICES.map(v => 'vieneu:' + v)];
 const bool = v => v === true || v === 'true' || v === 1;
 // Only known keys, right types, sane ranges: the panel is local, but nothing from the socket is trusted blindly.

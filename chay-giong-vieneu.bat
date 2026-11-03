@@ -7,5 +7,16 @@ rem Chi nghe trong may nay. Watermark am cua VieNeu giu nguyen.
 set HOST=127.0.0.1
 set PORT=8000
 set PYTHONUTF8=1
-.venv\Scripts\python.exe -m apps.openai_speech
+rem Co card NVIDIA: ban v3 Turbo (hay nhat). Khong co: ban v3 Nano chay bang CPU (nhe, nhanh tren may yeu).
+rem Muon ep dung ban Nano: dat VIENEU_MODE=nano truoc khi chay file nay.
+set MODE=%VIENEU_MODE%
+if "%MODE%"=="" (where nvidia-smi >nul 2>&1 && set MODE=turbo || set MODE=nano)
+if /i "%MODE%"=="nano" (
+  echo Dung ban VieNeu v3 Nano ^(CPU^)
+  set VIENEU_BACKEND=onnx
+  .venv\Scripts\python.exe "%~dp0scripts\giong_nhe.py"
+) else (
+  echo Dung ban VieNeu v3 Turbo ^(GPU^)
+  .venv\Scripts\python.exe -m apps.openai_speech
+)
 pause
