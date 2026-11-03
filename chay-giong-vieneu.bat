@@ -1,8 +1,11 @@
 @echo off
 chcp 65001 >nul
+rem NOPAUSE=1 (cho AI hoac script goi): khong dung lai cho bam phim
+set "P=pause"
+if defined NOPAUSE set "P=ver >nul"
 cd /d "%~dp0tools\VieNeu-TTS"
 title Giong doc VieNeu-TTS - giu cua so nay mo
-if not exist ".venv\Scripts\python.exe" (echo Chua cai VieNeu. Chay cai-giong-vieneu.bat truoc. & pause & exit /b 1)
+if not exist ".venv\Scripts\python.exe" (echo Chua cai VieNeu. Chay cai-giong-vieneu.bat truoc. & %P% & exit /b 1)
 rem Chi nghe trong may nay. Watermark am cua VieNeu giu nguyen.
 set HOST=127.0.0.1
 set PORT=8000
@@ -19,4 +22,4 @@ if /i "%MODE%"=="nano" (
   echo Dung ban VieNeu v3 Turbo ^(GPU^)
   .venv\Scripts\python.exe -m apps.openai_speech
 )
-pause
+%P%

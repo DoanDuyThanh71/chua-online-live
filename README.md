@@ -4,6 +4,11 @@ Overlay 9:16 cho TikTok LIVE, chủ đề chánh điện online. Người xem v�
 
 Bản này gom các điểm hay của 8 dự án cùng chủ đề trên GitHub và viết lại từ đầu, với bảo mật mặc định an toàn và có test tự động. Nguồn gốc từng phần xem [THIRD_PARTY.md](THIRD_PARTY.md).
 
+## Người mới bắt đầu từ đây
+
+- **Để AI cài giúp**: copy prompt trong [docs/PROMPT-CAI-DAT.md](docs/PROMPT-CAI-DAT.md), dán vào Claude Code, Codex hoặc Antigravity. AI sẽ đọc [AGENTS.md](AGENTS.md) và tự cài.
+- **Tự cài từng bước**: [docs/CAI-DAT.md](docs/CAI-DAT.md)
+- **Kiểm tra cài đặt**: `node scripts/kiem-tra.mjs --chay`
 - **Chuẩn bị đi live**: [docs/CHECKLIST-LIVE.md](docs/CHECKLIST-LIVE.md)
 - **Kế hoạch, việc đang chờ, những gì đã quyết định không làm**: [docs/KE-HOACH.md](docs/KE-HOACH.md)
 

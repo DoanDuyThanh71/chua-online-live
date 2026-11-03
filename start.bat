@@ -1,12 +1,15 @@
 @echo off
 chcp 65001 >nul
+rem NOPAUSE=1 (cho AI hoac script goi): khong dung lai cho bam phim
+set "P=pause"
+if defined NOPAUSE set "P=ver >nul"
 cd /d "%~dp0"
 title Chanh Dien An Lac - TikTok LIVE
 
 where node >nul 2>&1
 if %errorlevel% neq 0 (
   echo [LOI] Chua cai Node.js. Tai ban LTS tai https://nodejs.org roi chay lai file nay.
-  pause
+  %P%
   exit /b 1
 )
 
@@ -15,7 +18,7 @@ if not exist "node_modules\" (
   call npm install --no-audit --no-fund
   if %errorlevel% neq 0 (
     echo [LOI] npm install that bai.
-    pause
+    %P%
     exit /b 1
   )
 )
@@ -32,4 +35,4 @@ echo  Giu cua so nay mo trong suot buoi live. Ctrl+C de tat.
 echo.
 start "" cmd /c "timeout /t 2 >nul & start http://localhost:3000/control.html"
 node server\index.mjs
-pause
+%P%
